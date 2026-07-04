@@ -88,4 +88,3 @@ python src/stock_check.py
   içindeki `cron` satırından değiştirebilirsin.
 - Bu proje bir yatırım tavsiyesi aracı değildir, sadece belirlediğin eşiğe
   göre bildirim gönderir.
-# stock-notification-bot

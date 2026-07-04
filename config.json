@@ -1,9 +1,6 @@
 {
   "hisseler": [
-    {
-      "ticker": "BETAE.IS",
-      "ad": "Beta Enerji",
-      "esik_yuzde": 99
-    }
+    { "ticker": "BETAE.IS", "ad": "Beta Enerji", "tavan_esigi": 9.5, "adet": 28, "maliyet_fiyati": 40 },
+    { "ticker": "ORZAX.IS", "ad": "Orzaks İlaç", "tavan_esigi": 9.5, "adet": 12, "maliyet_fiyati": 69 }
   ]
 }
