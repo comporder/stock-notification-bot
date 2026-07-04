@@ -94,10 +94,18 @@ def telegram_mesaj_gonder(token: str, chat_id: str, mesaj: str) -> None:
     resp.raise_for_status()
 
 
-def hisse_blogu_olustur(hisse: TakipEdilenHisse, fiyat: float, degisim: float, tavan_serisi: int, tavan_bugun: bool) -> str:
+def hisse_blogu_olustur(
+    hisse: TakipEdilenHisse,
+    fiyat: float,
+    degisim: float,
+    tavan_serisi: int,
+    tavan_bugun: bool,
+    degisim_etiketi: str = "Bugünkü değişim",
+    tavan_bilgisi_goster: bool = True,
+) -> str:
     satirlar = [
         f"📊 <b>{hisse.ad}</b>",
-        f"Fiyat: {fiyat:.2f} TL | Bugünkü değişim: %{degisim:.2f}",
+        f"Fiyat: {fiyat:.2f} TL | {degisim_etiketi}: %{degisim:.2f}",
     ]
 
     if hisse.adet and hisse.maliyet_fiyati:
@@ -113,8 +121,10 @@ def hisse_blogu_olustur(hisse: TakipEdilenHisse, fiyat: float, degisim: float, t
             f"Güncel değer: {guncel_deger:,.2f} TL | Kâr/Zarar: {isaret} {kar_zarar_tl:,.2f} TL (%{kar_zarar_yuzde:.2f})"
         )
 
-    durum = "Tavanda kapadı ✅" if tavan_bugun else "Tavan yapılamadı ⚠️"
-    satirlar.append(f"Durum: {durum} | Tavan serisi: {tavan_serisi} gün")
+    if tavan_bilgisi_goster:
+        durum = "Tavanda kapadı ✅" if tavan_bugun else "Tavan yapılamadı ⚠️"
+        satirlar.append(f"Durum: {durum} | Tavan serisi: {tavan_serisi} gün")
+
     return "\n".join(satirlar)
 
 
@@ -131,16 +141,12 @@ def main() -> int:
         return 1
 
     bugun_tarih = date.today()
-
-    if bugun_tarih.weekday() in HAFTA_SONU_GUNLERI:
-        mesaj = f"📅 {bugun_tarih.isoformat()} — Bugün hafta sonu, BIST kapalı. Herhangi bir değişiklik yok."
-        print(mesaj)
-        try:
-            telegram_mesaj_gonder(token, chat_id, mesaj)
-        except Exception as exc:  # noqa: BLE001
-            print(f"Bildirim gönderilemedi: {exc}", file=sys.stderr)
-            return 1
-        return 0
+    is_haftasonu = bugun_tarih.weekday() in HAFTA_SONU_GUNLERI
+    mod = os.environ.get("MOD", "aksam").strip().lower()
+    if mod not in ("sabah", "aksam", "haftasonu"):
+        mod = "aksam"
+    if is_haftasonu:
+        mod = "haftasonu"
 
     hisseler = config_yukle()
     state = state_yukle()
@@ -162,10 +168,17 @@ def main() -> int:
             continue
 
         tavan_bugun = degisim >= hisse.tavan_esigi
-        onceki_durum = state.get(hisse.ticker, {})
-        onceki_seri = onceki_durum.get("tavan_serisi", 0)
-        yeni_seri = onceki_seri + 1 if tavan_bugun else 0
-        state[hisse.ticker] = {"son_tarih": bugun, "tavan_serisi": yeni_seri}
+
+        # Tavan serisi sayacı sadece akşam (kapanış) verisiyle güncellenir.
+        # Sabah ve hafta sonu verisi salt bilgi amaçlıdır, sayaç bozulmasın.
+        if mod == "aksam":
+            onceki_durum = state.get(hisse.ticker, {})
+            onceki_seri = onceki_durum.get("tavan_serisi", 0)
+            yeni_seri = onceki_seri + 1 if tavan_bugun else 0
+            state[hisse.ticker] = {"son_tarih": bugun, "tavan_serisi": yeni_seri}
+        else:
+            onceki_durum = state.get(hisse.ticker, {})
+            yeni_seri = onceki_durum.get("tavan_serisi", 0)
 
         if hisse.adet and hisse.maliyet_fiyati:
             toplam_guncel_deger += fiyat * hisse.adet
@@ -173,13 +186,29 @@ def main() -> int:
             portfoy_hesaplanabilir = True
 
         print(f"[{hisse.ad}] Fiyat: {fiyat} TL | Değişim: %{degisim:.2f} | Seri: {yeni_seri}")
-        bloklar.append(hisse_blogu_olustur(hisse, fiyat, degisim, yeni_seri, tavan_bugun))
+
+        if mod == "haftasonu":
+            blok = hisse_blogu_olustur(
+                hisse, fiyat, degisim, yeni_seri, tavan_bugun,
+                degisim_etiketi="Son kapanış değişimi",
+                tavan_bilgisi_goster=False,
+            )
+        else:
+            blok = hisse_blogu_olustur(hisse, fiyat, degisim, yeni_seri, tavan_bugun)
+        bloklar.append(blok)
 
     if not bloklar:
         print("Raporlanacak hisse yok.")
         return 0
 
-    mesaj = f"🗓️ Günlük Hisse Özeti ({bugun})\n\n" + "\n\n".join(bloklar)
+    if mod == "sabah":
+        baslik = f"🌅 Sabah Durumu — Erken Görüntü ({bugun})\n(Piyasa yeni açıldı, kesinleşmemiş veri; kapanışta netleşecek)"
+    elif mod == "haftasonu":
+        baslik = f"📅 Hafta Sonu Portföy Durumu ({bugun})\n(Piyasa kapalı, rakamlar Cuma günkü son kapanışa aittir)"
+    else:
+        baslik = f"🌇 Akşam Özeti — Kesin Kapanış Sonucu ({bugun})"
+
+    mesaj = f"{baslik}\n\n" + "\n\n".join(bloklar)
 
     if portfoy_hesaplanabilir:
         toplam_kar_zarar = toplam_guncel_deger - toplam_maliyet
@@ -195,12 +224,13 @@ def main() -> int:
 
     try:
         telegram_mesaj_gonder(token, chat_id, mesaj)
-        print("Günlük özet gönderildi.")
+        print("Özet gönderildi.")
     except Exception as exc:  # noqa: BLE001
         print(f"Bildirim gönderilemedi: {exc}", file=sys.stderr)
         return 1
 
-    state_kaydet(state)
+    if mod == "aksam":
+        state_kaydet(state)
     return 0
 
 

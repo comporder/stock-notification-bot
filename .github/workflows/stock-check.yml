@@ -2,10 +2,23 @@ name: Hisse Takip
 
 on:
   schedule:
-    # Kapanışa yakın (TR saatiyle ~18:05, UTC+3) -> UTC 15:05
-    # Hafta içi (Pazartesi-Cuma), günde bir kez
+    # Sabah: BIST açılışından kısa süre sonra (TR 10:15) -> UTC 07:15, hafta içi
+    - cron: "15 7 * * 1-5"
+    # Akşam: kapanışa yakın (TR 18:05) -> UTC 15:05, hafta içi (kesin sonuç, tavan serisi burada güncellenir)
     - cron: "5 15 * * 1-5"
-  workflow_dispatch: {}  # Actions sekmesinden elle tetiklemek için
+    # Hafta sonu: günde bir kez, bilgi amaçlı portföy durumu (TR 12:00) -> UTC 09:00, Cmt/Paz
+    - cron: "0 9 * * 0,6"
+  workflow_dispatch:
+    inputs:
+      mod:
+        description: "Elle çalıştırırken mod"
+        required: false
+        default: "aksam"
+        type: choice
+        options:
+          - sabah
+          - aksam
+          - haftasonu
 
 permissions:
   contents: write  # state.json'u repoya geri commit'leyebilmek için gerekli
@@ -25,13 +38,27 @@ jobs:
       - name: Bağımlılıkları kur
         run: pip install -r requirements.txt
 
+      - name: Modu belirle
+        run: |
+          if [ "${{ github.event.schedule }}" = "15 7 * * 1-5" ]; then
+            echo "MOD=sabah" >> "$GITHUB_ENV"
+          elif [ "${{ github.event.schedule }}" = "5 15 * * 1-5" ]; then
+            echo "MOD=aksam" >> "$GITHUB_ENV"
+          elif [ "${{ github.event.schedule }}" = "0 9 * * 0,6" ]; then
+            echo "MOD=haftasonu" >> "$GITHUB_ENV"
+          else
+            echo "MOD=${{ github.event.inputs.mod || 'aksam' }}" >> "$GITHUB_ENV"
+          fi
+
       - name: Hisseleri kontrol et
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          MOD: ${{ env.MOD }}
         run: python src/stock_check.py
 
       - name: state.json değişikliğini kaydet
+        if: env.MOD == 'aksam'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
