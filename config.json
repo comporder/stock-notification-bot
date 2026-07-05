@@ -1,6 +1,7 @@
 {
   "hisseler": [
     { "ticker": "BETAE.IS", "ad": "Beta Enerji", "tavan_esigi": 9.5, "adet": 28, "maliyet_fiyati": 40 },
-    { "ticker": "ORZAX.IS", "ad": "Orzaks İlaç", "tavan_esigi": 9.5, "adet": 12, "maliyet_fiyati": 69 }
+    { "ticker": "ORZAX.IS", "ad": "Orzaks İlaç", "tavan_esigi": 9.5, "adet": 12, "maliyet_fiyati": 69 },
+    { "ticker": "GOLDA.IS", "ad": "Golda Gıda", "tavan_esigi": 9.5, "adet": 132, "maliyet_fiyati": 10 }
   ]
 }
