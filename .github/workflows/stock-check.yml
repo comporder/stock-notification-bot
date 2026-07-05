@@ -57,6 +57,13 @@ jobs:
           MOD: ${{ env.MOD }}
         run: python src/stock_check.py
 
+      - name: Hisseleri kontrol et
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_GROUP_CHAT_ID }}
+          MOD: ${{ env.MOD }}
+        run: python src/stock_check.py
+
       - name: state.json değişikliğini kaydet
         if: env.MOD == 'aksam'
         run: |
