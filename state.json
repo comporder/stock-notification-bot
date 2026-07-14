@@ -1,11 +1,11 @@
 {
   "BETAE.IS": {
     "son_tarih": "2026-07-14",
-    "tavan_serisi": 30
+    "tavan_serisi": 32
   },
   "ORZAX.IS": {
     "son_tarih": "2026-07-14",
-    "tavan_serisi": 8
+    "tavan_serisi": 10
   },
   "SOHOE.IS": {
     "son_tarih": "2026-07-07",
@@ -13,6 +13,6 @@
   },
   "GOLDA.IS": {
     "son_tarih": "2026-07-14",
-    "tavan_serisi": 14
+    "tavan_serisi": 16
   }
 }
