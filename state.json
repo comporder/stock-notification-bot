@@ -1,10 +1,10 @@
 {
   "BETAE.IS": {
-    "son_tarih": "2026-10-01",
-    "tavan_serisi": 4
+    "son_tarih": "2026-10-02",
+    "tavan_serisi": 0
   },
   "ORZAX.IS": {
-    "son_tarih": "2026-10-01",
+    "son_tarih": "2026-10-02",
     "tavan_serisi": 0
   },
   "SOHOE.IS": {
@@ -12,11 +12,11 @@
     "tavan_serisi": 0
   },
   "GOLDA.IS": {
-    "son_tarih": "2026-10-01",
-    "tavan_serisi": 0
+    "son_tarih": "2026-10-02",
+    "tavan_serisi": 2
   },
   "SSAAT.IS": {
-    "son_tarih": "2026-10-01",
+    "son_tarih": "2026-10-02",
     "tavan_serisi": 0
   }
 }
